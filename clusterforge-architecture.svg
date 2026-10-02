@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">ClusterForge system architecture</title>
+  <desc id="desc">The Client CLI submits jobs to a Coordinator containing job management, a task queue, scheduling, worker monitoring, failure detection, and result aggregation. Three workers receive tasks and return results and heartbeats. Unfinished tasks are requeued after a timeout.</desc>
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#94a3b8"/></marker></defs>
+  <rect width="1200" height="760" rx="20" fill="#0d1625"/>
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <text x="40" y="49" fill="#fbbf24" font-size="12" letter-spacing="2" font-weight="700">SYSTEM MAP / PROPOSED ARCHITECTURE</text>
+    <text x="40" y="89" fill="#f1f5f9" font-size="28" font-weight="700">One coordinator. Multiple workers. Shared progress.</text>
+    <rect x="435" y="122" width="330" height="64" rx="12" fill="#1b273a" stroke="#52637c"/>
+    <text x="600" y="161" fill="#e2e8f0" font-size="20" text-anchor="middle" font-weight="600">Client CLI</text>
+    <path d="M600 187V244" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+    <text x="619" y="219" fill="#b4c3d6" font-size="14">Submit job / request status</text>
+    <rect x="185" y="251" width="830" height="236" rx="16" fill="#172335" stroke="#aa8740" stroke-width="1.5"/>
+    <text x="211" y="287" fill="#fde68a" font-size="20" font-weight="700">Coordinator</text>
+    <text x="986" y="285" text-anchor="end" fill="#b4c3d6" font-size="13">SCHEDULE · MONITOR · AGGREGATE</text>
+    <g fill="#101b2c" stroke="#33455f"><rect x="210" y="311" width="244" height="62" rx="8"/><rect x="478" y="311" width="244" height="62" rx="8"/><rect x="746" y="311" width="244" height="62" rx="8"/><rect x="210" y="392" width="244" height="62" rx="8"/><rect x="478" y="392" width="244" height="62" rx="8"/><rect x="746" y="392" width="244" height="62" rx="8"/></g>
+    <g fill="#e2e8f0" font-size="17" text-anchor="middle"><text x="332" y="349">Job Manager</text><text x="600" y="349">Task Queue + Scheduler</text><text x="868" y="349">Worker Registry</text><text x="332" y="430">Failure Detector</text><text x="600" y="430">Result Manager</text><text x="868" y="430">Final Job Output</text></g>
+    <path d="M345 490V579M600 490V579M855 490V579" stroke="#94a3b8" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <rect x="374" y="510" width="452" height="47" rx="8" fill="#0d1625" stroke="#33455f"/>
+    <text x="600" y="539" text-anchor="middle" fill="#a7f3d0" font-size="15">Tasks ↓     Results + heartbeats ↑</text>
+    <g fill="#122b31" stroke="#467b75"><rect x="230" y="587" width="230" height="92" rx="12"/><rect x="485" y="587" width="230" height="92" rx="12"/><rect x="740" y="587" width="230" height="92" rx="12"/></g>
+    <g text-anchor="middle"><g fill="#a7f3d0" font-size="20" font-weight="600"><text x="345" y="623">Worker 1</text><text x="600" y="623">Worker 2</text><text x="855" y="623">Worker 3</text></g><g fill="#b4c3d6" font-size="14"><text x="345" y="654">Executor · Heartbeat</text><text x="600" y="654">Executor · Heartbeat</text><text x="855" y="654">Executor · Heartbeat</text></g></g>
+    <text x="600" y="724" text-anchor="middle" fill="#b4c3d6" font-size="15">Recovery path: heartbeat timeout → unfinished tasks requeued → healthy worker</text>
+  </g>
+</svg>
