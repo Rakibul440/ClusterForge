@@ -1,471 +1,242 @@
+<div align="center">
+
+<img src="./clusterforge-banner.svg" alt="ClusterForge — Distributed work. Resilient execution." width="100%">
+
 # ClusterForge
 
-### A Fault-Tolerant Distributed Computing System
+**A fault-tolerant distributed computing system, built for the terminal.**
 
-ClusterForge is a **CLI-based distributed computing system** that uses multiple computers or worker nodes to process computational tasks together.
+Split a job. Execute across workers. Recover unfinished tasks when a worker goes offline.
 
-The system follows a **Coordinator–Worker architecture**. A Coordinator manages jobs and distributes smaller tasks among available Worker Nodes. Workers execute these tasks in parallel and return their results to the Coordinator.
+![Stage: System design](https://img.shields.io/badge/stage-system_design-fbbf24?style=flat-square&labelColor=111827)
+![Language: Python](https://img.shields.io/badge/language-Python-67e8f9?style=flat-square&labelColor=111827)
+![Architecture: Coordinator–Worker](https://img.shields.io/badge/architecture-Coordinator--Worker-a7f3d0?style=flat-square&labelColor=111827)
+![Interface: CLI](https://img.shields.io/badge/interface-CLI-c4b5fd?style=flat-square&labelColor=111827)
 
-The key feature of ClusterForge is **fault tolerance**. If a worker fails during execution, the Coordinator detects the failure and reassigns its unfinished tasks to another available worker instead of restarting the entire job.
+[Overview](#overview) · [Architecture](#architecture) · [CLI walkthrough](#cli-walkthrough) · [Failure recovery](#failure-recovery) · [Development](#development)
 
-> **Distribute the work. Detect failures. Recover the work. Complete the job.**
-
----
-
-## 🎯 Project Goal
-
-The main goal of ClusterForge is to build and understand a practical distributed computing system while demonstrating important distributed-system concepts.
-
-The project focuses on:
-
-* Distributed task execution
-* Parallel processing
-* Task scheduling
-* Network communication
-* Worker monitoring
-* Failure detection
-* Task recovery
-* Result aggregation
-
-ClusterForge is intentionally designed as a **CLI application** so that development can focus on the core distributed-system functionality rather than a web frontend.
+</div>
 
 ---
 
-## 🏗️ Architecture
+## Overview
 
-```text
-                         +----------------+
-                         |     Client     |
-                         |      CLI       |
-                         +-------+--------+
-                                 |
-                              Submit Job
-                                 |
-                                 v
-                       +-------------------+
-                       |    Coordinator    |
-                       |-------------------|
-                       |   Job Manager     |
-                       |   Task Scheduler  |
-                       |   Task Queue      |
-                       |   Worker Registry |
-                       |   Failure Detector|
-                       |   Result Manager  |
-                       +---------+---------+
-                                 |
-              +------------------+------------------+
-              |                  |                  |
-              v                  v                  v
-        +-----------+      +-----------+      +-----------+
-        |  Worker 1 |      |  Worker 2 |      |  Worker 3 |
-        |-----------|      |-----------|      |-----------|
-        | Executor  |      | Executor  |      | Executor  |
-        | Heartbeat |      | Heartbeat |      | Heartbeat |
-        +-----------+      +-----------+      +-----------+
-              |                  |                  |
-              +------------------+------------------+
-                                 |
-                                 v
-                       +-------------------+
-                       |  Result Manager   |
-                       |   Final Result    |
-                       +-------------------+
-```
+**A worker may fail. The computation should continue.**
 
----
+ClusterForge is a Python distributed computing project designed to coordinate computational work across multiple machines. A central Coordinator splits jobs into independent tasks, schedules them on available Workers, and combines their results.
 
-## ⚙️ How It Works
+Its core focus is **worker-failure recovery**: detect an unresponsive worker through heartbeat monitoring, return its unfinished tasks to the queue, and assign them to a healthy worker. Completed work should be preserved instead of restarting the entire job.
 
-### 1. Submit a Job
+> **Project stage — system design.** This README describes the intended system. Commands, output, and directory layouts are illustrative; a runnable implementation and verified installation procedure are not included in this documentation package.
 
-The user submits a computational job through the CLI.
+## Designed capabilities
 
-```text
-Client → Coordinator
-```
+| Capability | What it enables |
+| :--- | :--- |
+| **Distributed execution** | Process one job across multiple worker nodes. |
+| **Parallel processing** | Run independent tasks concurrently. |
+| **Task scheduling** | Match queued work to available workers. |
+| **Worker registration** | Track workers that join the cluster. |
+| **Heartbeat monitoring** | Maintain a view of worker availability. |
+| **Failure recovery** | Reassign unfinished work after a worker timeout. |
+| **Result aggregation** | Collect task outputs and assemble the final result. |
+| **Terminal workflow** | Submit jobs and inspect cluster status through a CLI. |
 
-### 2. Split the Job
+## Architecture
 
-The Coordinator divides the job into smaller independent tasks.
+<img src="./clusterforge-architecture.svg" alt="The Client CLI submits jobs to the Coordinator. Its scheduler dispatches tasks to three workers. Workers return results and heartbeats. The Coordinator aggregates results and requeues unfinished tasks after worker timeouts." width="100%">
 
-```text
-Large Job
-   |
-   +-- Task 1
-   +-- Task 2
-   +-- Task 3
-   +-- Task 4
-```
+### Responsibilities
 
-### 3. Distribute Tasks
+| Component | Responsibility |
+| :--- | :--- |
+| **Client CLI** | Submit computational jobs and request cluster status. |
+| **Job Manager** | Divide jobs into tasks and track overall progress. |
+| **Task Scheduler & Queue** | Hold pending tasks and dispatch them to available workers. |
+| **Worker Registry** | Track registered workers and their availability. |
+| **Failure Detector** | Watch heartbeat deadlines and identify unresponsive workers. |
+| **Worker Executor** | Execute assigned tasks and return results. |
+| **Result Manager** | Collect task results and produce the final job output. |
 
-The Coordinator assigns tasks to available workers.
+### From submission to result
 
-```text
-Task 1 → Worker 1
-Task 2 → Worker 2
-Task 3 → Worker 3
-Task 4 → Worker 1
-```
+1. **Submit** — the Client sends a job to the Coordinator.
+2. **Partition** — the Job Manager creates smaller, independent tasks.
+3. **Schedule** — the Scheduler assigns queued tasks to available workers.
+4. **Execute** — workers process tasks in parallel and send heartbeats.
+5. **Collect** — the Coordinator records completed task results.
+6. **Aggregate** — the Result Manager combines outputs once the required tasks complete.
 
-### 4. Execute in Parallel
+If a worker becomes unavailable during execution, its unfinished work returns to the scheduling flow. See [Failure recovery](#failure-recovery).
 
-Workers process their assigned tasks simultaneously.
+## CLI walkthrough
 
-### 5. Collect Results
+The proposed CLI keeps the cluster workflow small: start a Coordinator, start workers, submit a job, and inspect progress.
 
-Workers send completed results back to the Coordinator.
-
-```text
-Worker 1 ──┐
-Worker 2 ──┼──> Coordinator → Final Result
-Worker 3 ──┘
-```
-
-### 6. Handle Worker Failure
-
-Workers periodically send heartbeat messages.
-
-```text
-Worker 1 ── HEARTBEAT ──> Coordinator
-Worker 2 ── HEARTBEAT ──> Coordinator
-Worker 3 ── HEARTBEAT ──> Coordinator
-```
-
-If a worker stops responding:
-
-```text
-Worker 2
-   |
-   X
-Failure
-   |
-   v
-Coordinator detects failure
-   |
-   v
-Find unfinished tasks
-   |
-   v
-Reassign task
-   |
-   v
-Healthy Worker
-```
-
-The entire job does **not** need to restart.
-
----
-
-## 🧩 Core Components
-
-| Component            | Responsibility                   |
-| -------------------- | -------------------------------- |
-| **Client**           | Submits jobs through the CLI     |
-| **Coordinator**      | Controls and manages the cluster |
-| **Task Scheduler**   | Assigns tasks to workers         |
-| **Task Queue**       | Stores pending tasks             |
-| **Worker**           | Executes assigned tasks          |
-| **Heartbeat System** | Reports worker health            |
-| **Failure Detector** | Detects failed workers           |
-| **Result Manager**   | Collects and combines results    |
-
----
-
-## 🔥 Key Features
-
-* **Distributed Computing** — Process one job using multiple worker nodes.
-* **Parallel Execution** — Independent tasks can run simultaneously.
-* **Task Scheduling** — Coordinator distributes pending tasks to workers.
-* **Worker Registration** — Workers register themselves with the Coordinator.
-* **Heartbeat Monitoring** — Workers periodically report that they are alive.
-* **Failure Detection** — Coordinator detects unavailable workers.
-* **Task Recovery** — Unfinished tasks from failed workers are reassigned.
-* **Result Aggregation** — Coordinator collects worker results and produces the final result.
-* **CLI Interface** — Control and monitor the cluster from the terminal.
-
----
-
-## 🛠️ Technology Stack
-
-| Technology                    | Purpose                          |
-| ----------------------------- | -------------------------------- |
-| **Python**                    | Core implementation              |
-| **gRPC / HTTP**               | Coordinator–Worker communication |
-| **Protocol Buffers / JSON**   | Data serialization               |
-| **Multiprocessing / AsyncIO** | Concurrent task execution        |
-| **Docker**                    | Running multiple nodes           |
-| **Linux**                     | Primary development environment  |
-| **Git & GitHub**              | Version control                  |
-| **Pytest**                    | Testing                          |
-
-> The exact communication mechanism may be finalized during implementation based on project requirements.
-
----
-
-## 💻 CLI-Based Design
-
-ClusterForge does not require a React or full-stack frontend.
-
-The system will be controlled through command-line tools.
-
-Example:
+**Illustrative commands, aligned with the planned module layout.** Run long-lived processes in separate terminals from the project root once these entry points are implemented.
 
 ```bash
-# Start the Coordinator
-python coordinator.py
+# Terminal 1 · Start the coordinator
+python -m coordinator.coordinator
 
-# Start workers
-python worker.py --id worker1
-python worker.py --id worker2
-python worker.py --id worker3
+# Terminals 2–4 · Start one worker per terminal
+python -m worker.worker --id worker1
+python -m worker.worker --id worker2
+python -m worker.worker --id worker3
 
-# Submit a job
-python client.py submit --input data.txt
-
-# View cluster status
-python client.py status
+# Client terminal · Submit work and inspect the cluster
+python -m client.client submit --input data.txt
+python -m client.client status
 ```
 
-Example output:
+Coordinator addresses, ports, input formats, and environment setup will be documented with the implementation.
+
+<details open>
+<summary><strong>Example cluster status</strong></summary>
+
+Illustrative output; these counts do not represent a live cluster.
 
 ```text
-ClusterForge
---------------------------------
-Coordinator: RUNNING
+CLUSTERFORGE / CLUSTER STATUS
+─────────────────────────────────────
+Coordinator    RUNNING
 
-Workers:
-  worker1    ONLINE
-  worker2    ONLINE
-  worker3    ONLINE
+WORKER         STATE
+worker1        ONLINE
+worker2        ONLINE
+worker3        ONLINE
 
-Tasks:
-  Pending:    2
-  Running:    3
-  Completed:  15
-  Failed:     0
+TASKS          COUNT
+Pending            2
+Running            3
+Completed         15
+Failed             0
+─────────────────────────────────────
 ```
 
----
+</details>
 
-## 🚨 Fault-Tolerance Example
+## Failure recovery
 
-Suppose the cluster has three workers:
+Consider a job with three tasks. Each worker receives one task, but `worker2` goes offline before returning its result.
+
+<img src="./clusterforge-recovery.svg" alt="Task 2 recovery: worker2 stops responding, the Coordinator detects a heartbeat timeout, Task 2 returns to the queue, and worker3 retries it. Completed Tasks 1 and 3 are retained." width="100%">
+
+| Step | Coordinator action | Intended outcome |
+| :--- | :--- | :--- |
+| **Detect** | Observe that `worker2` has missed its heartbeat deadline. | Mark the worker unavailable. |
+| **Identify** | Find tasks assigned to it without accepted results. | Recover only unfinished work. |
+| **Requeue** | Return those tasks to the pending queue. | Make them eligible for scheduling again. |
+| **Reassign** | Dispatch `task2` when a healthy worker is available. | Resume progress on the job. |
+| **Complete** | Accept the recovered task result and aggregate outputs. | Finish the job without restarting completed tasks. |
+
+<details>
+<summary><strong>Example recovery log</strong></summary>
 
 ```text
-Worker 1 → Task 1
-Worker 2 → Task 2
-Worker 3 → Task 3
+[coordinator] worker2 heartbeat timeout
+[coordinator] worker2 marked unavailable
+[coordinator] task2 returned to pending queue
+[scheduler]   task2 assigned to worker3
+[worker3]     task2 completed
+[coordinator] all task results collected; aggregating job output
 ```
 
-If Worker 2 suddenly fails:
+This is an illustrative sequence, not captured runtime output.
 
-```text
-Worker 1 → Task 1 ✓
-Worker 2 → Task 2 ✗
-Worker 3 → Task 3 ✓
-```
+</details>
 
-The Coordinator detects the failure:
+### Recovery boundaries
 
-```text
-[Coordinator] Worker 2 heartbeat timeout
-[Coordinator] Worker 2 marked as FAILED
-[Coordinator] Recovering Task 2
-[Coordinator] Task 2 assigned to Worker 3
-```
+Heartbeat timeouts indicate suspected unavailability: a slow worker or network interruption can look like a failure. A timed-out worker may still finish its original task after reassignment.
 
-The computation continues:
+The implementation therefore needs explicit decisions about **task identity, duplicate and late results, retry limits, and safe task re-execution**. Exactly-once execution is not established by this design. Workloads should use independent tasks that can be retried safely.
 
-```text
-Worker 3 → Task 2 ✓
-```
+The fault-tolerance scope here is **worker failure**. Coordinator failover and durable recovery after a Coordinator restart are not specified. If no healthy worker is available, recovered tasks must wait for capacity.
 
-This demonstrates the main fault-tolerance mechanism of ClusterForge.
+## Technology direction
 
----
+| Area | Proposed technology | Design note |
+| :--- | :--- | :--- |
+| Core implementation | **Python** | Coordinator, workers, and client. |
+| Node communication | **gRPC or HTTP** | Transport remains to be selected. |
+| Serialization | **Protocol Buffers or JSON** | Choose alongside the transport. |
+| Concurrency | **Multiprocessing / asyncio** | Select execution and I/O models for the workload. |
+| Local cluster environment | **Docker** | Planned multi-node development setup. |
+| Primary platform | **Linux** | Target development environment. |
+| Testing | **pytest** | Planned unit and integration testing. |
+| Collaboration | **Git & GitHub** | Source control and project discussion. |
 
-## 🧠 Distributed Systems Concepts
+## Development
 
-ClusterForge provides practical implementation of:
-
-* Coordinator–Worker architecture
-* Distributed task scheduling
-* Parallel computation
-* Network communication
-* Heartbeat-based failure detection
-* Task state management
-* Task reassignment
-* Fault recovery
-* Result aggregation
-* Basic workload distribution
-
----
-
-## 📁 Planned Project Structure
+### Proposed repository layout
 
 ```text
 ClusterForge/
-│
 ├── coordinator/
-│   ├── coordinator.py
-│   ├── scheduler.py
-│   ├── task_queue.py
-│   ├── worker_manager.py
-│   ├── failure_detector.py
-│   └── result_manager.py
-│
+│   ├── coordinator.py        # Job orchestration and service entry point
+│   ├── scheduler.py          # Worker selection and task assignment
+│   ├── task_queue.py         # Pending-task management
+│   ├── worker_manager.py     # Registration and worker availability
+│   ├── failure_detector.py   # Heartbeat deadlines and recovery triggers
+│   └── result_manager.py     # Result collection and aggregation
 ├── worker/
-│   ├── worker.py
-│   ├── executor.py
-│   └── heartbeat.py
-│
+│   ├── worker.py             # Worker entry point
+│   ├── executor.py           # Task execution
+│   └── heartbeat.py          # Periodic liveness reporting
 ├── client/
-│   └── client.py
-│
+│   └── client.py             # Submit and status commands
 ├── common/
-│   ├── models.py
-│   └── protocol/
-│
-├── tests/
-│
-├── docker/
-│
-├── requirements.txt
-├── README.md
-└── LICENSE
+│   ├── models.py             # Shared job, task, and worker models
+│   └── protocol/             # Message contracts
+├── tests/                    # Unit and integration tests
+├── docker/                   # Multi-node development configuration
+├── ./                   # README visuals
+├── requirements.txt          # Python dependencies
+└── README.md
 ```
 
-The structure may evolve as implementation progresses.
+This is the target layout; the current package contains the README and its SVG ..
+
+### Implementation milestones
+
+- [ ] **Define the contract** — select the transport, message schemas, task states, and supported input format.
+- [ ] **Complete one task end to end** — submit, schedule, execute, and collect a result with one worker.
+- [ ] **Distribute a job** — register multiple workers, execute in parallel, and aggregate task results.
+- [ ] **Recover interrupted work** — add heartbeats, timeout detection, reassignment, and result deduplication.
+- [ ] **Make the system observable** — expose useful cluster status and task lifecycle logs.
+- [ ] **Make the demo reproducible** — document setup, add Docker configuration, and validate failure scenarios.
+
+### Validation targets
+
+| Scenario | Expected behavior to verify |
+| :--- | :--- |
+| Multiple healthy workers | Distributed output matches a known reference result. |
+| Worker stops during a task | Unfinished work is reassigned; completed work is retained. |
+| Delayed result after timeout | A duplicate or stale result cannot corrupt aggregation. |
+| No available workers | Pending work remains queued until capacity becomes available. |
+| A task repeatedly fails | A bounded retry policy produces an inspectable terminal state. |
+
+### Contributing
+
+Useful early contributions include protocol design, scheduling policies, reproducible failure scenarios, and focused tests. Open an issue with the problem, proposed behavior, and validation approach before making a substantial architectural change.
+
+For bug reports, include the workload, worker count, reproduction steps, and relevant Coordinator and Worker logs. Contribution commands and checks will be added once the implementation is available.
+
+## Scope
+
+ClusterForge is a distributed computing learning and engineering project focused on scheduling, communication, worker monitoring, recovery, and aggregation. The CLI keeps development centered on these mechanisms.
+
+A web dashboard, enterprise cloud orchestration, complex authentication, and production-scale operations are outside the initial scope.
+
+**License:** to be selected. Add a `LICENSE` file before publishing licensing or reuse claims.
 
 ---
 
-## 🔄 System Workflow
+<div align="center">
 
-```text
-          Submit Job
-              |
-              v
-        +-------------+
-        | Coordinator |
-        +------+------+
-               |
-          Split Tasks
-               |
-               v
-        +-------------+
-        | Task Queue  |
-        +------+------+
-               |
-        Assign Tasks
-               |
-       +-------+-------+
-       |       |       |
-       v       v       v
-    Worker 1 Worker 2 Worker 3
-       |       |       |
-       +-------+-------+
-               |
-          Execute Tasks
-               |
-               v
-        Return Results
-               |
-               v
-        +-------------+
-        | Coordinator |
-        +------+------+
-               |
-        Aggregate Results
-               |
-               v
-          Final Result
-```
+**Distribute the work. Detect failures. Recover the work. Complete the job.**
 
----
+[Back to top](#clusterforge)
 
-## 🛡️ Failure Recovery Workflow
-
-```text
-Worker Running
-      |
-      v
-Heartbeat Sent
-      |
-      v
-Worker Failure
-      |
-      v
-Heartbeat Timeout
-      |
-      v
-Failure Detected
-      |
-      v
-Find Unfinished Tasks
-      |
-      v
-Return Tasks to Queue
-      |
-      v
-Assign to Healthy Worker
-      |
-      v
-Task Completed
-```
-
----
-
-## 🎓 Academic Focus
-
-ClusterForge is primarily a **Distributed Computing project** with a strong focus on **Fault Tolerance**.
-
-The project is designed to demonstrate how multiple machines can cooperate to solve a computational problem and how a distributed system can recover from individual worker failures.
-
-The project prioritizes the implementation and understanding of the underlying distributed-system mechanisms rather than building a large user interface.
-
----
-
-## 📌 Project Scope
-
-### Included
-
-* Coordinator
-* Multiple Workers
-* CLI client
-* Task scheduling
-* Parallel task execution
-* Worker communication
-* Heartbeat mechanism
-* Failure detection
-* Task reassignment
-* Result aggregation
-
-### Not the primary focus
-
-* React frontend
-* Large web dashboard
-* Enterprise-level cloud infrastructure
-* Complex authentication
-* Full-scale production orchestration
-
----
-
-## 🚀 Vision
-
-ClusterForge aims to provide a clear and practical demonstration of how a **fault-tolerant distributed computing system** works internally.
-
-The project focuses on one simple principle:
-
-> **A worker may fail, but the computation should continue.**
-
----
-
-## 👥 Project
-
-**Project Name:** ClusterForge
-**Project Type:** Distributed Computing System
-**Architecture:** Coordinator–Worker
-**Interface:** CLI
-**Primary Focus:** Distributed Computing & Fault Tolerance
-**Language:** Python
+</div>
