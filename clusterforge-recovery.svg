@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="330" viewBox="0 0 1200 330" role="img" aria-labelledby="title desc">
+  <title id="title">Recover the task. Preserve the progress.</title>
+  <desc id="desc">Worker 2 becomes unresponsive. The Coordinator detects a heartbeat timeout, requeues Task 2, and assigns it to Worker 3. Completed tasks are retained.</desc>
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#94a3b8"/></marker></defs>
+  <rect width="1200" height="330" rx="20" fill="#0d1625"/>
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <text x="40" y="44" fill="#fbbf24" font-size="12" font-weight="700" letter-spacing="2">FAILURE RECOVERY / ILLUSTRATIVE SCENARIO</text>
+    <text x="40" y="85" fill="#f1f5f9" font-size="28" font-weight="700">Recover the task. Preserve the progress.</text>
+    <g fill="none" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"><path d="M284 177H318"/><path d="M568 177H602"/><path d="M852 177H886"/></g>
+    <rect x="40" y="119" width="244" height="113" rx="12" fill="#30212c" stroke="#ac6071"/>
+    <rect x="324" y="119" width="244" height="113" rx="12" fill="#2d2a20" stroke="#9c803c"/>
+    <rect x="608" y="119" width="244" height="113" rx="12" fill="#1c293e" stroke="#5c7499"/>
+    <rect x="892" y="119" width="268" height="113" rx="12" fill="#122d31" stroke="#4c8f7f"/>
+    <g font-size="11" font-weight="700" letter-spacing="1.5"><text x="59" y="146" fill="#fda4af">01 / INTERRUPTED</text><text x="343" y="146" fill="#fde68a">02 / DETECTED</text><text x="627" y="146" fill="#bfdbfe">03 / REQUEUED</text><text x="911" y="146" fill="#a7f3d0">04 / RECOVERED</text></g>
+    <g fill="#f1f5f9" font-size="20" font-weight="600"><text x="59" y="179">Worker 2 offline</text><text x="343" y="179">Heartbeat timeout</text><text x="627" y="179">Task 2 pending</text><text x="911" y="179">Worker 3 completes</text></g>
+    <g fill="#bdc9d9" font-size="14"><text x="59" y="209">Task 2 has no accepted result</text><text x="343" y="209">Coordinator flags the worker</text><text x="627" y="209">Scheduler assigns a retry</text><text x="911" y="209">Task 2 result joins the job</text></g>
+    <circle cx="48" cy="279" r="5" fill="#a7f3d0"/>
+    <text x="65" y="284" fill="#a7f3d0" font-size="16">Tasks 1 and 3 remain complete.</text>
+    <text x="1160" y="284" text-anchor="end" fill="#a8b8cc" font-size="14">Retry unfinished work · Aggregate when complete</text>
+  </g>
+</svg>
