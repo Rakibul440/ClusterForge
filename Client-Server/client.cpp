@@ -32,15 +32,17 @@ void startClient(){
 	// sending connection request
 	connect(clientSocket, (struct sockaddr*) &serverAddress,sizeof(serverAddress));
 
-	// sending data
-	cout << "[+] ENTER YOUR MESSAGE : ";
-	// const char* sms;
-	// cin >> *sms;
+	while(true){
+		// sending data
+		cout << "[+] ENTER YOUR MESSAGE : ";
+		// const char* sms;
+		// cin >> *sms;
 
-	string sms;
-	getline(cin,sms);
-	send(clientSocket,sms.c_str(),sms.size(),0);
-	// send(clientSocket,sms,strlen(sms),0);
+		string sms;
+		getline(cin,sms);
+		send(clientSocket,sms.c_str(),sms.size(),0);
+		// send(clientSocket,sms,strlen(sms),0);
+	}
 
 	// close
 	close(clientSocket);
