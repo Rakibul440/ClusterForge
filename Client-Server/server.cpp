@@ -61,12 +61,19 @@ void startServer(){
 
 	cout << "\n";
 
+
 	while(true){
+
 		// receive data
 		char buffer[1024] = {0};
+		int bytesReceived = recv(clientSocket,buffer,sizeof(buffer),0);
 
-		recv(clientSocket,buffer,sizeof(buffer),0);
-		cout << "[+] MESSAGE FROM CLIENT : ";
+		if(bytesReceived<=0){
+			cout << "\n[?] CLIENT DISCONNECTED!\n";
+			break;
+		}
+		
+		cout << "[+] MESSAGE FROM CLIENT( " << peerIP << " ) : ";
 		cout << buffer << endl;
 	}
 
