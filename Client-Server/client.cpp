@@ -30,18 +30,28 @@ void startClient(){
 	serverAddress.sin_addr.s_addr = INADDR_ANY;
 
 	// sending connection request
-	connect(clientSocket, (struct sockaddr*) &serverAddress,sizeof(serverAddress));
+	int status = connect(clientSocket, (struct sockaddr*) &serverAddress,sizeof(serverAddress));
+
+	cout << "[+] CONNECTING TO SERVER ..." << endl;
+	if(status==1){
+		cout << "[?] CONNECTION FAILED!" << endl;
+		return;
+	}
+	cout << "[-] CONNECTION SUCCESSFULL!" << endl;
 
 	while(true){
+		cout << "[-] STATUS : " << status << endl;
 		// sending data
 		cout << "[+] ENTER YOUR MESSAGE : ";
-		// const char* sms;
-		// cin >> *sms;
 
 		string sms;
 		getline(cin,sms);
-		send(clientSocket,sms.c_str(),sms.size(),0);
-		// send(clientSocket,sms,strlen(sms),0);
+		int bytesSent = send(clientSocket,sms.c_str(),sms.size(),0);
+
+		if(bytesSent==-1){
+			cout << "[?] SERVER STOPPED, CAN NOT SEND!" << endl;
+			break;
+		}
 	}
 
 	// close
