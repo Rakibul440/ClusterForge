@@ -45,6 +45,7 @@ int main(){
     receivedData(clientSocket,clientIp);
 
     cout << BOLD << CYAN << "\n[*] CLOSING CONNECTION..." << RESET << endl;
+    close(clientSocket);
     close(server);
     cout << BOLD << RED << "[*] CONNECTION CLOSED!" << RESET << endl;
 
@@ -52,9 +53,9 @@ int main(){
 }
 
 int createServer(){
-    cout << GREEN << "[+] SOCKET CREATED!" << RESET << endl;
-
+    
     int serverSocket = socket(AF_INET,SOCK_STREAM,0);
+    cout << GREEN << "[+] SOCKET CREATED!" << RESET << endl;
 
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
