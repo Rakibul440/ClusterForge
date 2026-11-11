@@ -53,7 +53,7 @@ int createClient(){
 	}
 	cout << BOLD << GREEN <<"[-] CONNECTED SUCCESSFULLY!" << RESET << endl;
 
-
+    cout << "\n";
     return clientSocket;
 }
 
