@@ -21,9 +21,9 @@
 using namespace std;
 
 int createServer();
-void serverInfo(int);
-void clientInfo(int);
-void receivedData();
+string serverInfo(int);
+string clientInfo(int);
+void receivedData(int,string);
 
 
 int main(){
@@ -38,10 +38,15 @@ int main(){
     }
     cout << BOLD << GREEN << "[+] CLIENT CONNECTED!" << RESET << endl;
 
-    cout << BOLD << CYAN << "\n[+] SERVER INFO!" << RESET << endl;
+    cout << BOLD << CYAN << "\n[+] SERVER INFO" << RESET << endl;
     serverInfo(clientSocket);
-    clientInfo(clientSocket);
-    
+    string clientIp = clientInfo(clientSocket);
+
+    receivedData(clientSocket,clientIp);
+
+    cout << BOLD << CYAN << "\n[*] CLOSING CONNECTION..." << RESET << endl;
+    close(server);
+    cout << BOLD << RED << "[*] CONNECTION CLOSED!" << RESET << endl;
 
     return 0;
 }
@@ -67,8 +72,24 @@ int createServer(){
     return serverSocket;
 }
 
+void receivedData(int clientSocket, string ip){
+    while (true)
+    {
+        char buffer[1024] = {0};
+        int bytesReceived = recv(clientSocket,buffer,sizeof(buffer),0);
+        		if(bytesReceived<=0){
+			cout << BOLD << RED << "\n[?] CLIENT DISCONNECTED!" << RESET << endl;
+			break;
+		}
+		
+		cout << "[+] MESSAGE FROM CLIENT ( " << ip << " ) : ";
+		cout << buffer << endl;
+    }
+    
+}
 
-void serverInfo(int clientsocket){
+
+string serverInfo(int clientsocket){
     sockaddr_in serverIP;
     socklen_t ipsize = sizeof(serverIP);
     getsockname(clientsocket,(struct sockaddr*)&serverIP,&ipsize);
@@ -76,12 +97,14 @@ void serverInfo(int clientsocket){
     inet_ntop(AF_INET,&serverIP.sin_addr,ip,INET_ADDRSTRLEN);
     cout << BOLD << WHITE <<"[+] SERVER IP : " << ip << RESET << endl;
 	cout << BOLD << WHITE << "[+] SERVER PORT : " << ntohs(serverIP.sin_port) << RESET << endl;
+    cout << "\n";
+    return string(ip);
 }
 
 
-void clientInfo(int clientsocket){
+string clientInfo(int clientsocket){
 
-    cout << BOLD << WHITE << "[+] CLIENT INFO "<< RESET << endl;
+    cout << BOLD << CYAN << "[+] CLIENT INFO "<< RESET << endl;
 
     sockaddr_in clientIP;
     socklen_t ipsize = sizeof(clientIP);
@@ -90,4 +113,7 @@ void clientInfo(int clientsocket){
     inet_ntop(AF_INET,&clientIP.sin_addr,ip,INET_ADDRSTRLEN);
     cout << BOLD << WHITE <<"[+] CLIENT IP : " << ip << RESET << endl;
 	cout << BOLD << WHITE << "[+] CLIENT PORT : " << ntohs(clientIP.sin_port) << RESET << endl;
+
+    cout << "\n";
+    return string(ip);
 }
