@@ -28,7 +28,7 @@ void receivedData(int,string);
 
 int main(){
 
-    cout << BOLD << WHITE << "[+] STARTING SERVER..." << RESET << endl;
+    cout << BOLD << CYAN << "[+] STARTING SERVER..." << RESET << endl;
     int server = createServer();
 
     int clientSocket = accept(server,nullptr,nullptr);
